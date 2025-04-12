@@ -1,0 +1,53 @@
+import requests
+from bs4 import BeautifulSoup
+import os
+from urllib.parse import unquote
+def download_images(url,folder_name):
+    response = requests.get(url)
+    soup =BeautifulSoup(response.text,'html.parser')
+    if not os.path.exists(folder_name):
+     os.makedirs(folder_name)
+     img_tags = soup.find_all('img')
+     for img_tag in img_tags:
+         img_url = img_tag['src']
+         if img_url.endswith(('.jpg','.jpeg','.png','.gif')):
+            if not img_url.startswith('http://')and not img_url.startswith( 'https://'):
+                img_url= 'https:'+ img_url
+            decoded_part = unquote(img_url).split('/')[-3]
+            img_filename = decoded_part +'_'+img_url.split('/')[-1]
+            img_path = os.path.join(folder_name, img_filename)
+            with open(img_path, 'wb') as img_file:
+                img_file.write(requests.get(img_url).content)
+                print('Picture saved:',img_filename)
+start_page = 15
+end_page = 32
+folder_name ='2018'
+if not os.path.exists(folder_name):
+      os .makedirs(folder_name)
+for page in range(start_page, end_page + 1):
+    url=f'https://www.nature.com/nature/research-articles?searchType=journalSearch&sort=PubDate&year=2018&page={page}'
+    response = requests.get(url)
+    html_content = response.text
+    soup = BeautifulSoup(html_content, "html.parser")
+    article_links = []
+    articles = soup.find_all("article")
+    for article in articles:
+        link_element = article.find("a")
+        if link_element:
+           article_link = "https://www.nature.com" + link_element["href"]
+           article_links.append(article_link)
+    for url in article_links:
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        img_tags = soup.find_all('img')
+        for img_tag in img_tags:
+            img_url = img_tag['src']
+            if img_url .endswith(('.jpg','.png','.gif')):
+               if not img_url.startswith('http://') and not img_url.startswith('https://'):
+                img_url = 'https:'+ img_url
+               decoded_part = unquote(img_url).split('/')[-3]
+               img_filename = decoded_part +'_'+ img_url.split('/')[-1]
+               img_path = os.path.join(folder_name, img_filename)
+               with open(img_path, 'wb') as img_file:
+                   img_file.write(requests.get(img_url).content)
+                   print('Picture saved:',img_filename)
