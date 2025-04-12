@@ -1,0 +1,45 @@
+from sklearn.cluster import KMeans
+from PIL import Image
+import numpy as np
+import os
+import random
+directory = ''
+n_clusters = 22
+sample_size_per_image = 50000
+threshold = 20
+kmeans = KMeans(n_clusters=n_clusters)
+all_pixels = []
+
+black = (0, 0, 0)
+white = (255, 255, 255)
+gray = (128, 128, 128)
+for filename in os.listdir(directory):
+    if filename.endswith(".png"):
+        img_path = os.path.join(directory, filename)
+        img = Image.open(img_path)
+        img = img.convert('RGB')
+        width, height = img.size
+        for _ in range(sample_size_per_image):
+            x = random.randint(0, width - 1)
+            y = random.randint(0, height - 1)
+            pixel = img.getpixel((x, y))
+            all_pixels.append(pixel)
+all_pixels = np.array(all_pixels)
+kmeans.fit(all_pixels)
+cluster_info = []
+for cluster_id in range(n_clusters):
+    center_color = kmeans.cluster_centers_[cluster_id].astype(int)
+    if not ((abs(center_color[0] - black[0]) <= threshold and
+             abs(center_color[1] - black[1]) <= threshold and
+             abs(center_color[2] - black[2]) <= threshold) or
+            (abs(center_color[0] - white[0]) <= threshold and
+             abs(center_color[1] - white[1]) <= threshold and
+             abs(center_color[2] - white[2]) <= threshold) or
+            (abs(center_color[0] - gray[0]) <= threshold and
+             abs(center_color[1] - gray[1]) <= threshold and
+             abs(center_color[2] - gray[2]) <= threshold)):
+        pixels_in_cluster = np.sum(kmeans.labels_ == cluster_id)
+        cluster_info.append((tuple(center_color), pixels_in_cluster))
+cluster_info_sorted = sorted(cluster_info, key=lambda x: x[1], reverse=True)
+for color, pixels in cluster_info_sorted:
+    print(f"Color: {color}, Pixels: {pixels}")
